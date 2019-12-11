@@ -1,5 +1,5 @@
 //
-// send mail sample code with curl library
+// send mail with file sample code with curl library
 // refrence
 //  - https://curl.haxx.se/libcurl/c/smtp-tls.html
 //
@@ -13,6 +13,7 @@
 #define FROM    "<jjuiddong@gmail.com>"
 #define TO      "<jjuiddong@hanmail.net>"
 #define CC      "<jjuiddong@naver.com>"
+#define FILENAME "image.jpg"
 
 static const char *payload_text[] = {
   "Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n",
@@ -21,12 +22,14 @@ static const char *payload_text[] = {
   "Cc: " CC " (Another example User)\r\n",
   "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
   "rfcpedant.example.org>\r\n",
-  "Subject: SMTP TLS example message\r\n",
+  "Subject: Send Email With Attachment File8\r\n",
   "\r\n", /* empty line to divide headers from body, see RFC5322 */
   "The body of the message starts here.\r\n",
   "\r\n",
   "It could be a lot of lines, could be MIME encoded, whatever.\r\n",
   "Check RFC5322.\r\n",
+  "\r\n",
+  "http://jjuiddong.iptime.org/img.zip",
   NULL
 };
 
@@ -52,7 +55,7 @@ static size_t payload_source(void *ptr, size_t size, size_t nmemb, void *userp)
 }
 
 
-int SendMail(const char *from, const char **rcpts) 
+int SendMail(const char *from, const char **rcpts)
 {
 	CURL *curl;
 	CURLcode res = CURLE_OK;
@@ -60,8 +63,15 @@ int SendMail(const char *from, const char **rcpts)
 	struct upload_status upload_ctx;
 	upload_ctx.lines_read = 0;
 
+	int file_size = 0;
+	{
+		struct __stat64 buf;
+		_stat64(FILENAME, &buf);
+		file_size = (int)buf.st_size;
+	}	
+
 	curl = curl_easy_init();
-	if (curl) 
+	if (curl)
 	{
 		//curl_easy_setopt(curl, CURLOPT_URL, "smtp://mx1.hanmail.net");
 		curl_easy_setopt(curl, CURLOPT_USERNAME, "jjuiddong");
@@ -72,7 +82,7 @@ int SendMail(const char *from, const char **rcpts)
 		curl_easy_setopt(curl, CURLOPT_MAIL_FROM, from);
 
 		int i = 0;
-		while (rcpts[i]) 
+		while (rcpts[i])
 		{
 			recipients = curl_slist_append(recipients, rcpts[i]);
 			i++;
@@ -81,6 +91,7 @@ int SendMail(const char *from, const char **rcpts)
 		curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 		curl_easy_setopt(curl, CURLOPT_READFUNCTION, payload_source);
 		curl_easy_setopt(curl, CURLOPT_READDATA, &upload_ctx);
+		//curl_easy_setopt(curl, CURLOPT_INFILESIZE, file_size);
 		curl_easy_setopt(curl, CURLOPT_UPLOAD, 1L);
 		curl_easy_setopt(curl, CURLOPT_VERBOSE, 1);
 		res = curl_easy_perform(curl);
